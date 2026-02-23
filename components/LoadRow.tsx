@@ -6,10 +6,13 @@ import { filterBySimilarity } from '@/lib/exerciseNames'
 
 type Props = {
   row: ExerciseRow
+  sortIndex: number
   savedNames: string[]
   onLoadChange: (updates: Partial<SeriesLoad>) => void
   onNameChange: (name: string) => void
   onSaveName: (name: string) => void
+  onNameFocus?: () => void
+  onNameBlur?: () => void
   onDelete: () => void
 }
 
@@ -26,12 +29,17 @@ function KgAndSets({
   kgLabel: string
   setsLabel: string
 }) {
+  const showKg = sets !== 0
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="font-medium text-primary-700" aria-label={kgLabel}>
-        {kg}
-      </span>
-      <span className="text-primary-500 text-xs">kg</span>
+      {showKg && (
+        <>
+          <span className="font-medium text-primary-700" aria-label={kgLabel}>
+            {kg}
+          </span>
+          <span className="text-primary-500 text-xs">kg</span>
+        </>
+      )}
       <input
         type="number"
         min={0}
@@ -50,7 +58,7 @@ function KgAndSets({
   )
 }
 
-export function LoadRow({ row, savedNames, onLoadChange, onNameChange, onSaveName, onDelete }: Props) {
+export function LoadRow({ row, sortIndex, savedNames, onLoadChange, onNameChange, onSaveName, onNameFocus, onNameBlur, onDelete }: Props) {
   const { load, exerciseName } = row
   const validNum = load.valid || ''
 
@@ -67,7 +75,25 @@ export function LoadRow({ row, savedNames, onLoadChange, onNameChange, onSaveNam
           list={`suggestions-${row.exerciseId}`}
           value={exerciseName}
           onChange={(e) => onNameChange(e.target.value)}
-          onBlur={() => onSaveName(exerciseName)}
+          onFocus={() => onNameFocus?.()}
+          onBlur={() => {
+            onSaveName(exerciseName)
+            onNameBlur?.()
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Tab' && !e.shiftKey && suggestions.length > 0) {
+              e.preventDefault()
+              const best = suggestions[0]
+              onNameChange(best)
+              onSaveName(best)
+              requestAnimationFrame(() => {
+                const rowEl = (e.target as HTMLInputElement).closest('tr')
+                const inputs = rowEl?.querySelectorAll<HTMLInputElement>('input')
+                const nextInput = inputs?.[1]
+                nextInput?.focus()
+              })
+            }
+          }}
           className="w-full min-w-[120px] sm:min-w-[160px] border border-primary-200 rounded px-2 py-2 text-primary-900 bg-white"
           placeholder="Nome do exercício"
           aria-label="Nome do exercício"
@@ -98,22 +124,24 @@ export function LoadRow({ row, savedNames, onLoadChange, onNameChange, onSaveNam
       </td>
       <td className="p-2 sm:p-3 align-top">
         <div className="flex flex-col items-center gap-1">
-          <div className="flex items-center gap-1">
-            <input
-              type="number"
-              min={0}
-              step={1}
-              value={validNum}
-              onChange={(e) => {
-                const v = e.target.value === '' ? 0 : Number(e.target.value)
-                onLoadChange({ valid: v })
-              }}
-              className="w-16 sm:w-20 border border-primary-300 rounded px-2 py-2 text-center font-medium text-primary-900 bg-white"
-              placeholder="0"
-              aria-label="Carga da série válida em kg"
-            />
-            <span className="text-primary-500 text-sm">kg</span>
-          </div>
+          {load.validSets !== 0 && (
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={validNum}
+                onChange={(e) => {
+                  const v = e.target.value === '' ? 0 : Number(e.target.value)
+                  onLoadChange({ valid: v })
+                }}
+                className="w-16 sm:w-20 border border-primary-300 rounded px-2 py-2 text-center font-medium text-primary-900 bg-white"
+                placeholder="0"
+                aria-label="Carga da série válida em kg"
+              />
+              <span className="text-primary-500 text-sm">kg</span>
+            </div>
+          )}
           <input
             type="number"
             min={0}
