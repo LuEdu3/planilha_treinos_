@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --bg: #f0f9ff;
+  --card: #ffffff;
+  --text: #1e3a8a;
+  --text-muted: #1e40af;
+}
+
+body {
+  @apply antialiased text-primary-900 bg-primary-50 min-h-screen;
+}
+
+@layer utilities {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
