@@ -8,7 +8,7 @@ Aplicativo web para controle de progressão de carga na academia.
 
 Ao preencher a carga da série válida (100%), os valores de aquecimento e preparação são calculados automaticamente.
 
-## Rodar localmente as 
+## Rodar localmente
 
 ```bash
 npm install
