@@ -40,6 +40,8 @@ export function Planilha() {
   const [rowsByWorkout, setRowsByWorkout] = useState<Record<string, Map<string, ExerciseRow>>>({})
   const { names: savedExerciseNames, addName } = useExerciseNames()
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; workoutId: string } | null>(null)
+  const [focusedExerciseId, setFocusedExerciseId] = useState<string | null>(null)
+  const [focusedSortIndex, setFocusedSortIndex] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -57,6 +59,22 @@ export function Planilha() {
     exercises,
     rowsByWorkout[selectedWorkout] ?? new Map()
   )
+  const rowsSorted = (() => {
+    const sorted = [...rows].sort((a, b) => {
+      const na = a.exerciseName?.trim() ?? ''
+      const nb = b.exerciseName?.trim() ?? ''
+      if (!na && !nb) return 0
+      if (!na) return 1
+      if (!nb) return -1
+      return na.localeCompare(nb, 'pt-BR')
+    })
+    if (!focusedExerciseId) return sorted
+    const focusedRow = rows.find((r) => r.exerciseId === focusedExerciseId)
+    if (!focusedRow) return sorted
+    const rest = sorted.filter((r) => r.exerciseId !== focusedExerciseId)
+    const idx = Math.min(focusedSortIndex, rest.length)
+    return [...rest.slice(0, idx), focusedRow, ...rest.slice(idx)]
+  })()
 
   const updateLoad = useCallback(
     (exerciseId: string, updates: Partial<SeriesLoad>) => {
@@ -262,14 +280,20 @@ export function Planilha() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {rowsSorted.map((row, sortIndex) => (
               <LoadRow
                 key={row.exerciseId}
                 row={row}
+                sortIndex={sortIndex}
                 savedNames={savedExerciseNames}
                 onLoadChange={(updates) => updateLoad(row.exerciseId, updates)}
                 onNameChange={(name) => updateExerciseName(row.exerciseId, name)}
                 onSaveName={handleSaveExerciseName}
+                onNameFocus={() => {
+                  setFocusedExerciseId(row.exerciseId)
+                  setFocusedSortIndex(sortIndex)
+                }}
+                onNameBlur={() => setFocusedExerciseId(null)}
                 onDelete={() => removeExercise(row.exerciseId)}
               />
             ))}
